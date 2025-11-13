@@ -2,8 +2,7 @@ name: Deploy MERN App to EKS
 
 # Trigger workflow when pushing to master branch
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 # Global environment variables
 env:
