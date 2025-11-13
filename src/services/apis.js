@@ -1,5 +1,7 @@
-const BASE_URL = "http://localhost:4000/api/v1" ;
+// const BASE_URL = "http://localhost:4000/api/v1" ;
+// const BASE_URL = "http://af8cff3346adb4f2b9db1455ae4ac69d-271707642.ap-south-1.elb.amazonaws.com:4000/api/v1";
 
+const BASE_URL = "http://backend-internal:4000/api/v1";
 // AUTH ENDPOINTS
 export const endpoints = {
   SENDOTP_API: BASE_URL + "/auth/sendotp",
