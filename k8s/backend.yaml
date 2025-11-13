@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: 953675642713.dkr.ecr.ap-south-1.amazonaws.com/backend:final4
+        image: DOCKER_IMAGE_BACKEND
         ports:
         - containerPort: 4000
         env:
