@@ -1,0 +1,88 @@
+name: Deploy MERN App to EKS
+
+# Trigger workflow when pushing to master branch
+on:
+  push:
+    branches: [ main ]
+
+# Global environment variables
+env:
+  AWS_REGION: ap-south-1                        # <-- Change if your cluster is in another region
+  EKS_CLUSTER_NAME: study-notion-cluster-2        # <-- Your EKS cluster name
+  FRONTEND_ECR_REPO: frontend      # <-- Your frontend ECR repo
+  BACKEND_ECR_REPO: backend        # <-- Your backend ECR repo
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy MERN App
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # 1️⃣ Get short commit SHA for image tagging
+    - name: Get short commit SHA
+      id: commit
+      uses: prompt/actions-commit-hash@v2
+
+    # 2️⃣ Checkout code
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    # 3️⃣ Configure AWS credentials
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}         # <-- Add your AWS key in GitHub Secrets
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # <-- Add your AWS secret in GitHub Secrets
+        aws-region: ${{ env.AWS_REGION }}
+
+    # 4️⃣ Login to Amazon ECR
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    # 5️⃣ Build & push frontend Docker image
+    - name: Build and Push Frontend Docker Image
+      env:
+        IMAGE_TAG: ${{ steps.commit.outputs.short }}
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      run: |
+        echo "Building frontend Docker image..."
+        docker build -t $ECR_REGISTRY/$FRONTEND_ECR_REPO:$IMAGE_TAG ./Study-Notion   # <-- Make sure ./frontend points to your frontend folder
+        docker push $ECR_REGISTRY/$FRONTEND_ECR_REPO:$IMAGE_TAG
+
+    # 6️⃣ Build & push backend Docker image
+    - name: Build and Push Backend Docker Image
+      env:
+        IMAGE_TAG: ${{ steps.commit.outputs.short }}
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      run: |
+        echo "Building backend Docker image..."
+        docker build -t $ECR_REGISTRY/$BACKEND_ECR_REPO:$IMAGE_TAG ./Study-Notion/server      # <-- Make sure ./server points to your backend folder
+        docker push $ECR_REGISTRY/$BACKEND_ECR_REPO:$IMAGE_TAG
+
+    # 7️⃣ Update kubeconfig to connect to EKS cluster
+    - name: Update kubeconfig
+      run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
+
+    # 8️⃣ Deploy frontend to EKS
+    - name: Deploy Frontend to EKS
+      env:
+        IMAGE_TAG: ${{ steps.commit.outputs.short }}
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      run: |
+        # Replace the placeholder in your frontend deployment yaml with the new image
+        sed -i.bak "s|DOCKER_IMAGE_FRONTEND|$ECR_REGISTRY/$FRONTEND_ECR_REPO:$IMAGE_TAG|g" k8s/frontend.yaml
+        kubectl apply -f k8s/frontend.yaml
+        
+
+    # 9️⃣ Deploy backend to EKS
+    - name: Deploy Backend to EKS
+      env:
+        IMAGE_TAG: ${{ steps.commit.outputs.short }}
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      run: |
+        # Replace the placeholder in your backend deployment yaml with the new image
+        sed -i.bak "s|DOCKER_IMAGE_BACKEND|$ECR_REGISTRY/$BACKEND_ECR_REPO:$IMAGE_TAG|g" k8s/backend.yaml
+        kubectl apply -f k8s/backend.yaml
+    
