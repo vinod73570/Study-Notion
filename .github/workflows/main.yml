@@ -47,7 +47,7 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
         echo "Building frontend Docker image..."
-        docker build -t $ECR_REGISTRY/$FRONTEND_ECR_REPO:$IMAGE_TAG ./Study-Notion   # <-- Make sure ./frontend points to your frontend folder
+        docker build -t $ECR_REGISTRY/$FRONTEND_ECR_REPO:$IMAGE_TAG .   # <-- Make sure ./frontend points to your frontend folder
         docker push $ECR_REGISTRY/$FRONTEND_ECR_REPO:$IMAGE_TAG
 
     # 6️⃣ Build & push backend Docker image
@@ -57,7 +57,7 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
         echo "Building backend Docker image..."
-        docker build -t $ECR_REGISTRY/$BACKEND_ECR_REPO:$IMAGE_TAG ./Study-Notion/server      # <-- Make sure ./server points to your backend folder
+        docker build -t $ECR_REGISTRY/$BACKEND_ECR_REPO:$IMAGE_TAG ./server      # <-- Make sure ./server points to your backend folder
         docker push $ECR_REGISTRY/$BACKEND_ECR_REPO:$IMAGE_TAG
 
     # 7️⃣ Update kubeconfig to connect to EKS cluster
