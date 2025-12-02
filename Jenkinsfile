@@ -44,12 +44,12 @@ pipeline {
                     docker run -d --name backend \
                         --link mongo:mongo \
                         -e MONGO_URL="mongodb://admin:admin123@mongo:27017/studynotion?authSource=admin" \
-                        -p 5000:5000 \
+                        -p 5000:4000 \
                         backend:${IMAGE_TAG}
 
                     echo "Starting Frontend..."
                     docker run -d --name frontend \
-                        -p 3000:3000 \
+                        -p 3000:80 \
                         frontend:${IMAGE_TAG}
                 """
             }
@@ -63,14 +63,13 @@ pipeline {
  Deployment Completed
 ============================
 
-Frontend : http://<YOUR_JENKINS_SERVER_IP>:3000
-Backend  : http://<YOUR_JENKINS_SERVER_IP>:5000
-
-MongoDB Connection:
-mongodb://admin:admin123@<YOUR_JENKINS_SERVER_IP>:27017/studynotion?authSource=admin
+Frontend : http://YOUR-SERVER-IP:3000
+Backend  : http://YOUR-SERVER-IP:5000
+MongoDB  : mongodb://admin:admin123@YOUR-SERVER-IP:27017/studynotion?authSource=admin
 """
                 }
             }
         }
+
     }
 }
