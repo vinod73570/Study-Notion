@@ -1,75 +1,53 @@
 pipeline {
     agent any
 
-    environment {
-        IMAGE_TAG = "${env.GIT_COMMIT[0..6]}"
-    }
-
     stages {
 
-        stage('Checkout Code') {
+        stage("Checkout Code") {
             steps {
                 checkout scm
             }
         }
 
-        stage('Build Docker Images') {
+        stage("Login to ECR") {
             steps {
-                sh """
-                    echo "Building Frontend image..."
-                    docker build -t frontend:${IMAGE_TAG} .
-
-                    echo "Building Backend image..."
-                    docker build -t backend:${IMAGE_TAG} ./server
-                """
+                sh '''
+                aws ecr get-login-password --region ap-south-1 \
+                | docker login --username AWS --password-stdin 953675642713.dkr.ecr.ap-south-1.amazonaws.com
+                '''
             }
         }
 
-        stage('Run Containers (Same Server)') {
+        stage("Build & Push Image") {
             steps {
-                sh """
-                    # Remove old containers
-                    docker rm -f mongo backend frontend || true
-
-                    echo "Starting MongoDB..."
-                    docker run -d --name mongo \
-                        -p 27017:27017 \
-                        -e MONGO_INITDB_ROOT_USERNAME=admin \
-                        -e MONGO_INITDB_ROOT_PASSWORD=admin123 \
-                        mongo:latest
-
-                    sleep 10
-
-                    echo "Starting Backend..."
-                    docker run -d --name backend \
-                        --link mongo:mongo \
-                        -e MONGO_URL="mongodb://admin:admin123@mongo:27017/studynotion?authSource=admin" \
-                        -p 5000:4000 \
-                        backend:${IMAGE_TAG}
-
-                    echo "Starting Frontend..."
-                    docker run -d --name frontend \
-                        -p 3000:80 \
-                        frontend:${IMAGE_TAG}
-                """
+                sh '''
+                docker build -t 953675642713.dkr.ecr.ap-south-1.amazonaws.com/study-notion:latest .
+                docker push 953675642713.dkr.ecr.ap-south-1.amazonaws.com/study-notion:latest
+                '''
             }
         }
 
-        stage('Show URLs') {
+        stage("Configure EKS") {
             steps {
-                script {
-                    echo """
-============================
- Deployment Completed
-============================
-
-Frontend : http://YOUR-SERVER-IP:3000
-Backend  : http://YOUR-SERVER-IP:5000
-MongoDB  : mongodb://admin:admin123@YOUR-SERVER-IP:27017/studynotion?authSource=admin
-"""
-                }
+                sh '''
+                aws eks update-kubeconfig --region ap-south-1 --name study-notion-cluster-2
+                kubectl get nodes
+                '''
             }
         }
 
+        stage("Deploy to EKS") {
+            steps {
+                sh '''
+                kubectl apply -f k8s
+
+                kubectl set image deployment/frontend frontend=953675642713.dkr.ecr.ap-south-1.amazonaws.com/study-notion:latest
+                kubectl set image deployment/backend backend=953675642713.dkr.ecr.ap-south-1.amazonaws.com/study-notion:latest
+
+                kubectl rollout status deployment/frontend
+                kubectl rollout status deployment/backend
+                '''
+            }
+        }
     }
 }
