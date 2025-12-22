@@ -130,4 +130,28 @@ For detailed API documentation and endpoints, refer to the [API Documentation](/
 Access the application in your browser at `http://localhost:3000`.
 
 
+## CI/CD Pipeline (Jenkins + ECR + Private EKS)
+
+This repository demonstrates a production-style CI/CD pipeline using Jenkins.
+
+### Architecture
+- Jenkins runs on an EC2 instance inside the same VPC as the EKS cluster
+- Amazon ECR is used as the container registry
+- Amazon EKS is configured as a **private cluster**
+- Jenkins accesses EKS via IAM role and VPC networking
+
+### Pipeline Flow
+1. Jenkins checks out source code
+2. Frontend and backend Docker images are built separately
+3. Images are pushed to Amazon ECR
+4. Jenkins updates kubeconfig for the private EKS cluster
+5. Kubernetes manifests are applied to deploy the application
+
+### Notes
+- EKS cluster and ECR repositories are assumed to be pre-created
+- Jenkins uses IAM role-based authentication (no hardcoded credentials)
+- This setup reflects a real-world enterprise CI/CD workflow
+
+
+
 
