@@ -39,20 +39,15 @@ pipeline {
         stage("Configure Private EKS") {
             steps {
                 sh '''
-                aws eks update-kubeconfig --region ap-south-1 --name study-notion-cluster-2
-                kubectl get nodes
+                aws eks update-kubeconfig --region ap-south-1 --name study-notion-cluster
                 '''
             }
         }
 
-        stage("Deploy to EKS") {
+        stage("Deploy to Private EKS") {
             steps {
                 sh '''
                 kubectl apply -f k8s
-
-                kubectl set image deployment/frontend frontend=953675642713.dkr.ecr.ap-south-1.amazonaws.com/frontend:latest
-                kubectl set image deployment/backend backend=953675642713.dkr.ecr.ap-south-1.amazonaws.com/backend:latest
-
                 kubectl rollout status deployment/frontend
                 kubectl rollout status deployment/backend
                 '''
