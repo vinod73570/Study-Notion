@@ -1,3 +1,4 @@
+
 FROM node:18
 
 # Set working directory
@@ -17,6 +18,26 @@ EXPOSE 4000
 
 # Start backend server
 CMD ["node", "index.js"]
+
+
+
+
+# FROM node:18-alpine
+
+# WORKDIR /app
+
+# ENV NODE_ENV=production
+
+# COPY package.json package-lock.json ./
+# RUN npm ci --only=production
+
+# COPY . .
+
+# EXPOSE 4000
+# CMD ["node", "index.js"]
+
+
+
 
 
 
