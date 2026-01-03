@@ -9,54 +9,58 @@ const contactUsRoute = require("./routes/Contact");
 const database = require("./config/database");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const {cloudinaryConnect } = require("./config/cloudinary");
+const { cloudinaryConnect } = require("./config/cloudinary");
 const fileUpload = require("express-fileupload");
 const dotenv = require("dotenv");
-
-app.use(
-  cors({
-    origin: "*",
-    credentials: true,
-  })
-);
-
 
 dotenv.config();
 const PORT = process.env.PORT || 4000;
 
-//database connect
+// DB connect
 database.connect();
-//middlewares
+
+// Middlewares
 app.use(express.json());
 app.use(cookieParser());
 
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 
 app.use(
-	fileUpload({
-		useTempFiles:true,
-		tempFileDir:"/tmp",
-	})
-)
-//cloudinary connection
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp",
+  })
+);
+
+// Cloudinary
 cloudinaryConnect();
 
-//routes
+// Health check (CRITICAL)
+app.get("/health", (req, res) => {
+  return res.status(200).send("OK");
+});
+
+// Routes
 app.use("/api/v1/auth", userRoutes);
 app.use("/api/v1/profile", profileRoutes);
 app.use("/api/v1/course", courseRoutes);
 app.use("/api/v1/payment", paymentRoutes);
 app.use("/api/v1/reach", contactUsRoute);
 
-//def route
-
+// Root (temporary)
 app.get("/", (req, res) => {
-	return res.json({
-		success:true,
-		message:'Your server is up and running....'
-	});
+  return res.json({
+    success: true,
+    message: "Your server is up and running",
+  });
 });
 
-app.listen(PORT, () => {
-	console.log(`App is running at ${PORT}`)
-})
-
+// MUST bind to 0.0.0.0
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`App is running on port ${PORT}`);
+});
