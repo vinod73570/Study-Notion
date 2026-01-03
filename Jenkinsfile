@@ -1,55 +1,47 @@
+# this is automation script to build and push docker images to ECR
 pipeline {
     agent any
+
+    environment {
+        AWS_REGION = "ap-south-1"
+        ACCOUNT_ID = "953675642713"
+
+        FRONTEND_IMAGE = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/study-notion-frontend:latest"
+        BACKEND_IMAGE  = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/study-notion-backend:latest"
+    }
 
     stages {
 
         stage("Checkout Code") {
             steps {
-                checkout scm
+                git url: "https://github.com/vinod73570/Study-Notion.git", branch: "main"
             }
         }
 
         stage("Login to ECR") {
             steps {
                 sh '''
-                aws ecr get-login-password --region ap-south-1 \
-                | docker login --username AWS --password-stdin 953675642713.dkr.ecr.ap-south-1.amazonaws.com
+                aws ecr get-login-password --region $AWS_REGION \
+                | docker login --username AWS --password-stdin \
+                  $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
                 '''
             }
         }
 
-        stage("Build & Push Frontend Image") {
+        stage("Build & Push Frontend") {
             steps {
                 sh '''
-                docker build -t 953675642713.dkr.ecr.ap-south-1.amazonaws.com/frontend:latest -f Dockerfile .
-                docker push 953675642713.dkr.ecr.ap-south-1.amazonaws.com/frontend:latest
+                docker build -t $FRONTEND_IMAGE .
+                docker push $FRONTEND_IMAGE
                 '''
             }
         }
 
-        stage("Build & Push Backend Image") {
+        stage("Build & Push Backend") {
             steps {
                 sh '''
-                docker build -t 953675642713.dkr.ecr.ap-south-1.amazonaws.com/backend:latest -f server/Dockerfile server
-                docker push 953675642713.dkr.ecr.ap-south-1.amazonaws.com/backend:latest
-                '''
-            }
-        }
-
-        stage("Configure Private EKS") {
-            steps {
-                sh '''
-                aws eks update-kubeconfig --region ap-south-1 --name study-notion-cluster
-                '''
-            }
-        }
-
-        stage("Deploy to Private EKS") {
-            steps {
-                sh '''
-                kubectl apply -f k8s
-                kubectl rollout status deployment/frontend
-                kubectl rollout status deployment/backend
+                docker build -t $BACKEND_IMAGE ./server
+                docker push $BACKEND_IMAGE
                 '''
             }
         }
